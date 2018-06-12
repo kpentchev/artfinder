@@ -3,10 +3,12 @@ import numpy as np # numpy module
 import os # path join
 from pathlib import Path
 import time
+from cnn import CNN
+from image import image
 
 
 DATA_DIR = "/Users/kpentchev/artmimir/train_data_tfrecords/"
-MODEL_DIR = "/Users/kpentchev/artmimir/models/cnn/"
+MODEL_DIR = "/Users/kpentchev/artmimir/models/cnn2/"
 TRAINING_SET_SIZE = 9009
 BATCH_SIZE = 15
 N_CLASSES = 3
@@ -19,15 +21,6 @@ def _int64_feature(value):
 def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
-# image object from protobuf
-class _image_object:
-    def __init__(self):
-        self.image = tf.Variable([], dtype = tf.string)
-        self.height = tf.Variable([], dtype = tf.int64)
-        self.width = tf.Variable([], dtype = tf.int64)
-        self.filename = tf.Variable([], dtype = tf.string)
-        self.label = tf.Variable([], dtype = tf.int32)
-
 def read_and_decode(filename_queue):
     reader = tf.TFRecordReader()
     _, serialized_example = reader.read(filename_queue)
@@ -39,7 +32,7 @@ def read_and_decode(filename_queue):
         "image/class/label": tf.FixedLenFeature([], tf.int64),})
     image_encoded = features["image/encoded"]
     image_raw = tf.image.decode_jpeg(image_encoded, channels=3)
-    image_object = _image_object()
+    image_object = image()
     image_object.image = tf.image.resize_image_with_crop_or_pad(image_raw, IMAGE_SIZE, IMAGE_SIZE)
     image_object.height = features["image/height"]
     image_object.width = features["image/width"]
@@ -83,69 +76,19 @@ def artmimir_input(if_random = True, if_training = True):
             num_threads = 1)
         return image_batch, label_batch, filename_batch
 
-
-def weight_variable(shape):
-    initial = tf.truncated_normal(shape, stddev=0.05)
-    return tf.Variable(initial)
-
-def bias_variable(shape):
-    initial = tf.constant(0.02, shape=shape)
-    return tf.Variable(initial)
-
-def create_conv_layer(input, n_input_channels, conv_filter_size, n_filters):
-    weights = weight_variable(shape=[conv_filter_size, conv_filter_size, n_input_channels, n_filters])
-    biases = bias_variable(shape=[n_filters])
-
-    #layer_shape = input.get_shape()
-    #num_features = layer_shape[1:4].num_elements()
-    #print("number of features: %s" % num_features)
-
-    #create convolutional layer
-    layer = tf.nn.conv2d(input=input, filter=weights, strides=[1,1,1,1], padding='SAME')
-    #apply biases
-    layer += biases
-    #apply max-pooling
-    layer = tf.nn.max_pool(value=layer, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME')
-    #applu Relu activation function
-    layer = tf.nn.relu(layer)
-
-    return layer
-
-def create_flat_layer(layer):
-    layer_shape = layer.get_shape()
-    num_features = layer_shape[1:4].num_elements()
-    #print("number of features: %s" % num_features)
-    layer = tf.reshape(layer, [-1, num_features])
- 
-    return layer
-
-def create_fc_layer(input, num_inputs, num_outputs, use_relu=True):
-    weights = weight_variable(shape=[num_inputs, num_outputs])
-    biases = bias_variable(shape=[num_outputs])
- 
-    layer = tf.matmul(input, weights) + biases
-    if use_relu:
-        layer = tf.nn.relu(layer)
- 
-    return layer
-
 def conv_net(x):
     x_image = tf.reshape(x, [-1, IMAGE_SIZE, IMAGE_SIZE, 3])
-    # output w/h: conv 384 / 2 = 192
-    layer_conv1 = create_conv_layer(input=x_image, n_input_channels=3, conv_filter_size=3, n_filters=64)
-    # output w/h: 192 / 2 = 96 x 96 x 32 = 1179648
-    layer_conv2 = create_conv_layer(input=layer_conv1, n_input_channels=64, conv_filter_size=3, n_filters=64)
-    # output w/h: 96 / 2 = 48
-    layer_conv3 = create_conv_layer(input=layer_conv2, n_input_channels=64, conv_filter_size=3, n_filters=128)
 
-    layer_conv4 = create_conv_layer(input=layer_conv3, n_input_channels=128, conv_filter_size=3, n_filters=256)
-    # 48 x 48 x 128 = 294912
-    layer_flat = create_flat_layer(layer=layer_conv4)
-    # 8748 / 4 = 2187
-    layer_fc = create_fc_layer(input=layer_flat, num_inputs=layer_flat.get_shape()[1:4].num_elements(), num_outputs=2048, use_relu=True)
-
-    layer_out = create_fc_layer(input=layer_fc, num_inputs=2048, num_outputs=3, use_relu=False)
-    return layer_out
+    cnn = CNN()
+    cnn.input_layer(input=x_image, num_inputs=3, filter_size=3, num_filters=64)
+    cnn.conv_layer(num_inputs=64, filter_size=3, num_filters=64)
+    cnn.conv_layer(num_inputs=64, filter_size=3, num_filters=128)
+    cnn.conv_layer(num_inputs=128, filter_size=3, num_filters=256)
+    cnn.flat_layer()
+    cnn.fc_layer(num_outputs=2048)
+    cnn.output_layer(num_inputs=2048, num_outputs=3)
+    
+    return cnn.build()
 
 
 def artmimir_train():
@@ -247,5 +190,5 @@ def artmimir_eval():
         coord.join(threads)
         sess.close()
 
-#artmimir_train()
-artmimir_eval()
+artmimir_train()
+#artmimir_eval()
