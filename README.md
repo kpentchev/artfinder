@@ -35,3 +35,5 @@ A convolutional neuronal network (CNN) with 7 layers:
 * 1 output layer, with outputs = number of labels
 
 Images are processed in batches of 15 and down/up-sized to 384x384 pixels. For each pixel 3 channels (RGB) are used.
+
+Cost function is `reduce_mean` of `softmax_cross_entropy_with_logits_v2`. `AdamOptimizer` with a learning rate of `1e-4` was used for minimizing the function.
