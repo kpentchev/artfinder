@@ -33,7 +33,7 @@ def read_and_decode(filename_queue):
     image_object.label = tf.cast(features["image/class/label"], tf.int64)
     return image_object
 
-def artmimir_input(if_random = True, if_training = True):
+def read_data(if_random = True, if_training = True):
     if(if_training):
         filenames = [os.path.join(DATA_DIR, "train-0000%d-of-00004" % i) for i in range(0, 1)]
     else:
@@ -85,7 +85,7 @@ def conv_net(x):
 
 
 def artmimir_train():
-    image_batch_out, label_batch_out, filename_batch = artmimir_input(if_random = False, if_training = True)
+    image_batch_out, label_batch_out, filename_batch = read_data(if_random = False, if_training = True)
 
     image_batch_placeholder = tf.placeholder(tf.float32, shape=[BATCH_SIZE, IMAGE_SIZE, IMAGE_SIZE, 3])
     image_batch = tf.reshape(image_batch_out, (BATCH_SIZE, IMAGE_SIZE, IMAGE_SIZE, 3))
@@ -136,7 +136,7 @@ def artmimir_train():
 
 def artmimir_eval():
     N_SAMPLES_PER_LABEL = 10
-    image_batch_out, label_batch_out, filename_batch = artmimir_input(if_random = False, if_training = False)
+    image_batch_out, label_batch_out, filename_batch = read_data(if_random = False, if_training = False)
 
     image_batch_placeholder = tf.placeholder(tf.float32, shape=[BATCH_SIZE, IMAGE_SIZE, IMAGE_SIZE, 3])
     image_batch = tf.reshape(image_batch_out, (BATCH_SIZE, IMAGE_SIZE, IMAGE_SIZE, 3))
