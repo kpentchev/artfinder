@@ -1,5 +1,5 @@
 import Augmentor
-pipeline = Augmentor.Pipeline("/Users/kpentchev/artmimir/meisje_met_de_parel")
+pipeline = Augmentor.Pipeline("/Users/kpentchev/artmimir/sources/cafe_terrace_at_night")
 pipeline.rotate(probability=0.5, max_left_rotation=10, max_right_rotation=10)
 pipeline.zoom(probability=0.8, min_factor=1.1, max_factor=1.5)
 pipeline.random_brightness(probability=0.8, min_factor=0.1, max_factor=0.9)

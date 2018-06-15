@@ -9,9 +9,9 @@ from image import image
 
 DATA_DIR = "/Users/kpentchev/artmimir/train_data_tfrecords/"
 MODEL_DIR = "/Users/kpentchev/artmimir/models/cnn2/"
-TRAINING_SET_SIZE = 9009
+TRAINING_SET_SIZE = 15015
 BATCH_SIZE = 15
-N_CLASSES = 3
+N_CLASSES = 5
 IMAGE_SIZE = 384
 
 def read_and_decode(filename_queue):
@@ -35,13 +35,15 @@ def read_and_decode(filename_queue):
 
 def read_data(if_random = True, if_training = True):
     if(if_training):
-        filenames = [os.path.join(DATA_DIR, "train-0000%d-of-00004" % i) for i in range(0, 1)]
+        filenames = [os.path.join(DATA_DIR, "train-0000%d-of-00004" % i) for i in range(0, 4)]
     else:
-        filenames = [os.path.join(DATA_DIR, "validation-0000%d-of-00004" % i) for i in range(0, 1)]
+        filenames = [os.path.join(DATA_DIR, "validation-0000%d-of-00004" % i) for i in range(0, 4)]
 
     for f in filenames:
         if not tf.gfile.Exists(f):
             raise ValueError("Failed to find file: %s" % f)
+
+    print(filenames)
     filename_queue = tf.train.string_input_producer(filenames)
     image_object = read_and_decode(filename_queue)
     image = tf.image.per_image_standardization(image_object.image)
@@ -79,7 +81,7 @@ def conv_net(x):
     cnn.conv_layer(num_inputs=128, filter_size=3, num_filters=256)
     cnn.flat_layer()
     cnn.fc_layer(num_outputs=2048)
-    cnn.output_layer(num_inputs=2048, num_outputs=3)
+    cnn.output_layer(num_inputs=2048, num_outputs=N_CLASSES)
     
     return cnn.build()
 
@@ -92,7 +94,7 @@ def artmimir_train():
 
     label_batch_placeholder = tf.placeholder(tf.float32, shape=[BATCH_SIZE, N_CLASSES])
     label_offset = -tf.ones([BATCH_SIZE], dtype=tf.int64, name="label_batch_offset")
-    label_batch_one_hot = tf.one_hot(tf.add(label_batch_out, label_offset), depth=3, on_value=1.0, off_value=0.0)
+    label_batch_one_hot = tf.one_hot(tf.add(label_batch_out, label_offset), depth=N_CLASSES, on_value=1.0, off_value=0.0)
 
     cnn = conv_net(x=image_batch_placeholder)
 
@@ -183,5 +185,5 @@ def artmimir_eval():
         coord.join(threads)
         sess.close()
 
-artmimir_train()
-#artmimir_eval()
+#artmimir_train()
+artmimir_eval()
